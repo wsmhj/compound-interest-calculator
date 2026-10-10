@@ -1,0 +1,22 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {calculate,defaults,encode,decode,csv,Form} from '../lib/calculator';
+const near=(actual:number,expected:number)=>assert.ok(Math.abs(actual-expected)<Math.max(1e-7,Math.abs(expected)*1e-12),`${actual} != ${expected}`);
+const run=(patch:Partial<Form>)=>{const {result,errors}=calculate({...defaults,...patch});assert.ok(result,JSON.stringify(errors));return result;};
+test('independent annual lump-sum benchmark',()=>{const p=run({deposit:'0',years:'10',frequency:'1'});near(p.balance,16288.94626777442);near(p.interest,6288.94626777442);});
+test('monthly contribution matches independently derived annuity',()=>{const p=run({deposit:'100',years:'10'});near(p.balance,31998.322921469524);assert.equal(p.contributed,22000);assert.equal(p.rows.length,121);});
+test('hand-stepped beginning and ending annual deposits',()=>{const f={principal:'1000',deposit:'100',years:'2',rate:'10',frequency:'1',contribution:'1'};near(run({...f,timing:'end'}).balance,1420);near(run({...f,timing:'start'}).balance,1441);});
+test('zero rate, zero time and partial annual contribution boundary',()=>{near(run({principal:'1000',deposit:'100',years:'1',rate:'0'}).balance,2200);near(run({principal:'1000',years:'0',timing:'start'}).balance,1000);near(run({principal:'1000',deposit:'100',years:'0',months:'6',rate:'0',contribution:'1'}).balance,1000);near(run({principal:'1000',deposit:'100',years:'0',months:'6',rate:'0',contribution:'1',timing:'start'}).balance,1100);});
+test('APY equivalence, compounding frequencies, inflation, currencies',()=>{const a=run({principal:'1000',deposit:'0',years:'1',rate:'12'}),b=run({principal:'1000',deposit:'0',years:'1',rate:'12.68250301319698',rateType:'apy',frequency:'365'});near(a.balance,b.balance);for(const frequency of ['1','4','12','365'])near(run({principal:'1000',deposit:'0',years:'3',rate:'5',frequency}).balance,1000*(1+.05/Number(frequency))**(Number(frequency)*3));const p=run({inflation:'3'});near(p.real,p.balance/1.03**20);near(run({currency:'EUR'}).balance,run({}).balance);});
+test('normal and extreme valid scenarios agree with closed form',()=>{for(const years of [1,5,50])for(const rate of ['0.00001','3','12'])for(const timing of ['start','end']){const p=run({years:String(years),rate,deposit:'33.33',timing});const q=1+Number(rate)/1200,k=12*years;const expected=10000*q**k+33.33*((q**k-1)/(q-1))*(timing==='start'?q:1);assert.ok(Math.abs(p.balance-expected)<.01);}});
+test('invalid inputs and unsafe outputs produce no stale result',()=>{for(const [key,value]of [['principal',''],['principal','-1'],['rate','NaN'],['deposit','Infinity'],['months','12'],['years','1.5'],['frequency','0'],['currency','XXX'],['rateType','unknown'],['inflation','26']])assert.equal(calculate({...defaults,[key]:value}).result,null);assert.equal(calculate({...defaults,years:'100',months:'1'}).result,null);assert.equal(calculate({...defaults,principal:'1000000000',rate:'100',years:'100'}).result,null);});
+test('untrusted share parsing is strictly versioned and validated',()=>{assert.deepEqual(decode(encode(defaults)),defaults);for(const hash of ['#v2=x','#v1=%zz','#v1=null','#v1=[]','#v1='+encodeURIComponent(JSON.stringify({...defaults,principal:'<script>'})),'#v1='+encodeURIComponent(JSON.stringify({...defaults,extra:'x'})),'#v1='+'a'.repeat(2049)])assert.throws(()=>decode(hash));});
+test('CSV full monthly endpoint and assumptions match projection',()=>{const p=run({});const output=csv(defaults,p);assert.match(output,/Deposit timing,end/);assert.match(output,/Currency,USD/);assert.equal(output.trim().split('\r\n').at(-1),[240,p.contributed.toFixed(2),p.interest.toFixed(2),p.balance.toFixed(2)].join(','));});
+
+test('valid numeric notation survives sharing without breaking CSV structure',()=>{
+ const f={...defaults,principal:'0'.repeat(100)+'1234',deposit:'+200',rate:'\n5',years:'3e0'};
+ const p=calculate(f).result;assert.ok(p);
+ const restored=decode(encode(f));assert.equal(restored.principal,'1234');assert.equal(restored.rate,'5');assert.equal(restored.deposit,'200');
+ near(calculate(restored).result!.balance,p.balance);
+ const output=csv(f,p);assert.match(output,/Initial,1234\r\n/);assert.match(output,/Rate percent,5\r\n/);assert.match(output,/Deposit,200\r\n/);
+ assert.equal(output.split('\r\n').length,13+p.rows.length);
+ assert.ok(output.split('\r\n').every(line=>!line.includes('\n')));
+});

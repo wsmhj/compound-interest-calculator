@@ -1,0 +1,1 @@
+export default function NotFound(){return <div className="legal-page"><p className="eyebrow">404 · PAGE NOT FOUND</p><h1>Let’s get you back on track.</h1><p>This page is not available. Your next projection is one click away.</p><a className="primary-button" href="/">Open the calculator ↗</a></div>;}

@@ -1,0 +1,12 @@
+'use client';
+import {writeClipboard} from '../lib/clipboard';
+import {trapDialogFocus} from '../lib/dialog';
+import {useId,useRef,useState} from 'react';
+import {email} from '../lib/site';
+export default function Contact({label='Contact & feedback',iconOnly=false}:{label?:string;iconOnly?:boolean}){
+ const uid=useId();const titleId=`${uid}-title`,emailId=`${uid}-email`;
+ const ref=useRef<HTMLDialogElement>(null);const token=useRef(0);const[status,setStatus]=useState('');
+ function close(){token.current++;ref.current?.close();setStatus('');}
+ async function copy(){const id=++token.current;try{await writeClipboard(email);if(id===token.current&&ref.current?.open)setStatus('Email copied.');}catch{if(id===token.current&&ref.current?.open)setStatus('Copy unavailable. Select and copy the email below.');}}
+ return <><button className={iconOnly?'feedback-button email-icon-button':'feedback-button'} aria-label={iconOnly?'Email support and feedback':undefined} title={iconOnly?'Questions or feedback? Email us':undefined} onClick={()=>{setStatus('');ref.current?.showModal();}}>{iconOnly?<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>:<>{label}<span aria-hidden="true"> ↗</span></>}</button><dialog onKeyDown={trapDialogFocus} ref={ref} aria-labelledby={titleId} onCancel={()=>{token.current++;setStatus('');}} onClick={e=>{if(e.target===ref.current)close();}}><div className="dialog-content"><button className="close-button" aria-label="Close feedback" onClick={close}>×</button><p className="eyebrow">WE’RE LISTENING</p><h2 id={titleId}>Questions or feedback?</h2><p>Have a question, spotted a problem, or have an idea to improve the site? Email us at the address below. For calculation issues, include the inputs you used and the result you expected.</p><p>Please avoid sending account numbers, passwords or other sensitive information.</p><label htmlFor={emailId}>Contact email</label><input id={emailId} readOnly value={email} onFocus={e=>e.target.select()}/><div className="dialog-actions"><a className="primary-button" href={`mailto:${email}`}>Open email app ↗</a><button onClick={copy}>Copy email</button></div><p className="status" role="status">{status||'You choose what to send. Nothing is sent automatically.'}</p></div></dialog></>;
+}
