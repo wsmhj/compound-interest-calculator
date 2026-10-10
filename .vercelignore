@@ -1,0 +1,11 @@
+.git/
+.next/
+.vercel/
+node_modules/
+out/
+docs/evidence/
+*.tsbuildinfo
+*.log
+.env*
+!.env.production
+!.env.example
