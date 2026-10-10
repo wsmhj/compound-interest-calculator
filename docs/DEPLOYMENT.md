@@ -1,3 +1,13 @@
+## 2026-10-10 — Source pushed and production release verified
+
+- Source commit `aeff482d291c42274abdc4da5753428cf5528eed` was pushed to `https://github.com/wsmhj/compound-interest-calculator` (`main`); local and remote SHAs matched. The subsequent release-record commit changes documentation only.
+- Vercel built the source in Linux using `npm ci` and `npm run build`, exported all static routes, and marked deployment `dpl_5uuL2K6JVSmxHK4VsiRM7hEi17EK` READY. Immutable URL: https://compound-interest-calculator-fqohkhhqg-maojunjuns-projects.vercel.app . Production alias: https://compound-interest-calculator.co . `.vercelignore` excludes local QA artifacts/caches from future uploads; final upload contains 77 source/configuration files.
+- Fresh independent Windows checkout: Node 22.22.0 / npm 10.9.4, 28 tests + typecheck + lint + production build passed. Windows and cloud dependency installation audits reported zero known vulnerabilities.
+- Normal HTTPS through the current network now works; the earlier proxy failure is no longer reproduced. Seven content routes and robots/sitemap/llms return 200; an unknown route redirects to its trailing-slash form and returns 404. Homepage has the requested Title, correct canonical, index/follow and no noindex response header.
+- On the final production URL, verified $1,000 / zero deposits / one year / 10% yields $1,104.71 with monthly compounding and $1,100.00 annually; resetting restores $109,333.14. Browser console error log empty. Existing broad QA coverage remains in QA-REPORT; this release used targeted smoke testing, not a repeat of every prior control check.
+- Local evidence: `docs/evidence/local/release-http.json`, `release-production-home.png`. Earlier working production `dpl_J78tuuyoTZHhcK4jPsAx5RYhEA5e` remains the recorded recovery baseline. Native Save As/real-device limitations and the October 14 framework-security follow-up remain. No Search Console submission or ranking claim.
+- Publishing was performed with the Vercel CLI; automatic GitHub-triggered deployment has not been configured or claimed.
+
 ## 2026-10-10 — Source release preparation
 
 User authorized pushing and deploying the complete source. Remote `origin/main` was inspected at `d0e3af7` before the first source push. Added static Vercel source-build configuration (`npm ci`, `npm run build`, output `out/`) and ignored `.vercel/`; no calculator behavior or page copy changed in this release step.
